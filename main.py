@@ -346,7 +346,7 @@ def keep_alive():
 # keep alive and run the bot
 
 keep_alive()
-bot.run(os.run[DISCORD_BOT_TOKEN])
+bot.run(os.environ[DISCORD_BOT_TOKEN])
 
 
 
