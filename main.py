@@ -73,7 +73,7 @@ PROTOCOLS = {
     5:
     "If you react to a deployment, you show up. If for any reason you cannot attend, inform the host.",
     6:
-    "Finally, have fun, be happy. Don't take things too far, and if you see something, reach out. Read the rules above and act accordingly to that as well.",
+    "Do not break in-site rules and use common sense otherwise there will be consequences.",
 }
 
 @bot.event
@@ -134,20 +134,6 @@ def remove_points(discord_id, points_to_remove):
             sheet.update_cell(i, 3, new_points)
             return new_points
 
-def save_morph_to_sheet(user_id, username, morph):
-    records = morph_sheet.get_all_records()
-    for i, row in enumerate(records, start=2):
-        if str(row['Discord ID']) == str(user_id):
-            morph_sheet.update_cell(i, 3, morph)
-            return
-    morph_sheet.append_row([str(user_id), username, morph])
-
-def get_morph_from_sheet(user_id):
-    records = morph_sheet.get_all_records()
-    for row in records:
-        if str(row['Discord ID']) == str(user_id):
-            return row['Morph']
-    return None
 
 @bot.event
 async def on_ready():
@@ -302,7 +288,7 @@ async def timeout(interaction: discord.Interaction, member: discord.Member, minu
 @app_commands.describe(amount="Number of messages to delete")
 async def purge(interaction: discord.Interaction, amount: int):
     await interaction.channel.purge(limit=amount)
-    await interaction.response.send_message(f"🧹 Deleted {amount} messages.", ephemeral=True)
+    await interaction.response.send_message(f"🧹 Deleted {amount} messages.")
     log_channel = bot.get_channel(AUDIT_LOG_CHANNEL_ID)
     await log_channel.send(f"🧹 {interaction.user.mention} purged {amount} messages in {interaction.channel.mention}")
 
