@@ -23,7 +23,7 @@ morph_sheet = client.open("SCP Points Log").worksheet("Morphs")
 # Constants
 POINTS_LOG_CHANNEL_ID = 1387710159446474895
 AUDIT_LOG_CHANNEL_ID = 1387713963550314577
-ALLOWED_USERS = [1293609488833581099, 865864826236305418, 567108786033262595, 534854012328214559, 720535646871093268, 529933806170275856, 957994640093626408, 709213547527405690, 728405079572480031, 961232571256164383, 1114079619000303667, 719909192000864398, 619726723914661888, 851069327268380683, 936577360432619540, 1114079619000303667]
+ALLOWED_ROLES = [1395018313847013487]
 GUILD_ID = 995723132478427267
 
 # Bot Setup
@@ -33,10 +33,81 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("d!"), intents=inte
 
 deployment_tracker = {}
 
+RULES = {
+    1:
+    "Do not false react to event-checks, i.e Reacting to a deployment message but not showing up at the deployment.",
+    2: "Do not speak about unnecessary things.",
+    3: "Do not mock or speak badly about allied and/or unallied factions.",
+    4: "Spamming is not allowed.",
+    5: "Do not ping Rogue unless an emergency.",
+    6: "Do not be racist.",
+    7:
+    "You can be disrespectful in a jokingly manner, as long as you know the consequences.",
+    8: "Respect every SCP:RP site staff member.",
+    9:
+    "DM advertising or advertising is not allowed without consent of the person you are advertising to / or without the consent of Rogue.",
+    10:
+    "Do not start an irrelevant or inappropriate topic to talk about in any channel.",
+    11: "Do not add unnecessary reactions on announcements individually.",
+    12: "Refrain from mocking each other.",
+    13:
+    "Don't date in here, if you intend to do that, dating is only between 2 people. Do it in DM's, the faction has nothing to do with it.",
+    14: "Follow Discord TOS: https://discord.com/terms",
+    15:
+    "Follow Roblox TOS: https://en.help.roblox.com/hc/en-us/articles/115004647846-Roblox-Terms-of-Use",
+    69: "Did ur dumbass really think this was a rule?",
+    420: "What are you expecting to find here?",
+    1917: "Theres 15 fucking rules, why tf are you checking for rule 1917",
+    67: "I don't know what the meme is so uh yea",
+}
+
+PROTOCOLS = {
+    1:
+    "Act mature and professional at all times especially in formal situations. Joking should only be permitted when sites are in casual mode, and there should be no inappropriate content or behaviours being shared.",
+    2:
+    "If you are told to stop a behaviour by a HICOM, CO, or Site-Staff in game, please correct yourself and apologize to whoever was disturbed by the behaviour. Whether that be site-staff, other factions, Delta-0 members, or members of the public.",
+    3:
+    "Report Misbehaviour in-game to Mika directly as Mika overlooks professionalism and discipline. Do not be shy to reach out even if you are unsure if someone has broken a rule. All reports, serious or not, will be shared to other members of the HICOM team for overviewing.",
+    4:
+    "Under no circumstance should you mock, bully, behave inappropriately, be racist, sexist, homophobic, hateful, insensitive, offensive, or verbally abusive someone on site. This will NOT be taken lightly. This includes making comments on someone who is provoking you, or towards a person/site.",
+    5:
+    "If you react to a deployment, you show up. If for any reason you cannot attend, inform the host.",
+    6:
+    "Finally, have fun, be happy. Don't take things too far, and if you see something, reach out. Read the rules above and act accordingly to that as well.",
+}
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    content = message.content.lower()
+
+    # Check Rules with regex to match only rule followed by number 1-15
+    rule_match = re.search(r"\brule\s*(\d{1,2})\b", content)
+    if rule_match:
+        rule_num = int(rule_match.group(1))
+        if rule_num in RULES:
+            await message.channel.send(RULES[rule_num])
+            return  # stop further processing
+
+    # Check Protocols
+    protocol_match = re.search(r"\bprotocol\s*(\d{1,2})\b", content)
+    if protocol_match:
+        protocol_num = int(protocol_match.group(1))
+        if protocol_num in PROTOCOLS:
+            await message.channel.send(PROTOCOLS[protocol_num])
+            return
+
+    # Other keywords
+    if "crazy" in content:
+        await message.channel.send(
+            "Crazy? I was crazy once. They locked me in a room. A rubber room. A rubber room? A rubber room filled with rats. And rats make me crazy.")
+
 # Utility Functions
 
 def is_allowed(interaction):
-    return interaction.user.id in ALLOWED_USERS
+    return any(role.id in ALLOWED_ROLES for role in interaction.user.roles)
 
 def get_points(discord_id):
     records = sheet.get_all_records()
@@ -235,21 +306,7 @@ async def purge(interaction: discord.Interaction, amount: int):
     log_channel = bot.get_channel(AUDIT_LOG_CHANNEL_ID)
     await log_channel.send(f"🧹 {interaction.user.mention} purged {amount} messages in {interaction.channel.mention}")
 
-# MORPHS
-@app_commands.guilds(discord.Object(id=GUILD_ID))
-@bot.tree.command(name="savemorph", description="Save your morph settings")
-async def savemorph(interaction: discord.Interaction, morph: str):
-    user_id = str(interaction.user.id)
-    username = str(interaction.user.name)
-    formatted_morph = morph.replace("\\n", "\n")
-    data = morph_sheet.get_all_records()
-    for i, row in enumerate(data, start=2):
-        if str(row['UserID']) == user_id:
-            morph_sheet.update_cell(i, 3, formatted_morph)
-            await interaction.response.send_message("Ok nice saved")
-            return
-    morph_sheet.append_row([username, user_id, formatted_morph])
-    await interaction.response.send_message("✅ Morph saved.")
+
 
 
 @app_commands.guilds(discord.Object(id=GUILD_ID))
@@ -266,23 +323,21 @@ async def untimeout(interaction: discord.Interaction, member: discord.Member):
     await member.timeout(None)
     await interaction.response.send_message(f"✅ Timeout removed from {member.mention}.")
 
-@app_commands.guilds(discord.Object(id=GUILD_ID))
-@bot.tree.command(name="morph", description="Retrieve your saved morph")
-async def morph(interaction: discord.Interaction, user: discord.Member = None):
-    target = user or interaction.user
-    data = morph_sheet.get_all_records()
-    for row in data:
-        if str(row['UserID']) == str(target.id):
-            try:
-                raw_morph = row['Morph']
-                formatted = raw_morph.replace(" :", "\n:")
-                await target.send(f"Your morph:\n{formatted}")
+# temp
 
-                await interaction.response.send_message("Check ur dms bro.", ephemeral=True)
-            except:
-                await interaction.response.send_message("Ur dms are off dumbass.", ephemeral=True)
-            return
-    await interaction.response.send_message("❌ No morph saved.", ephemeral=True)
+@app_commands.guilds(discord.Object(id=GUILD_ID))
+@app_commands.guilds(discord.Object(id=GUILD_ID))
+@bot.tree.command(name="virtus", description="Access Virtus channels")
+async def virtus(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "**Virtus Channels:**\n<#1387293873063202958>\n<#1394945387709730868>",)
+
+
+@app_commands.guilds(discord.Object(id=GUILD_ID))
+@bot.tree.command(name="416", description="Access 416 channels")
+async def fouronesix(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "**416 Channels:**\n<#1394220165926752286>\n<#1394945444936810599>", )
 
 # LOCKDOWN
 @app_commands.guilds(discord.Object(id=GUILD_ID))
