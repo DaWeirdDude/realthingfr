@@ -25,6 +25,7 @@ morph_sheet = client.open("SCP Points Log").worksheet("Morphs")
 POINTS_LOG_CHANNEL_ID = 1387710159446474895
 AUDIT_LOG_CHANNEL_ID = 1387713963550314577
 ALLOWED_ROLES = [1395018313847013487]
+DEPLOYMENT_ROLE = [1395875682810331318]
 GUILD_ID = 995723132478427267
 
 # Bot Setup
@@ -153,22 +154,32 @@ async def on_ready():
 async def cmds(interaction: discord.Interaction):
     commands_list = """
     **📜 Command List:**
+    **Points**
     `/pointsadd` - Add points
     `/pointsremove` - Remove points
     `/points` - Check user points
     `/leaderboard` - Show leaderboard
+
+    **Deployments**
     `/startdeploy` - Start deployment timer
     `/stopdeploy` - Stop deployment timer
     `/deploylog` - View deployment logs
     `/cleardeploy` - Clear a user's deployment logs
+    `/log` - Log deployment attendees
+    `/deployments` - Check deployment count
+    `/clearlog` - Clear a user's deployment logs
+
+    **Moderation**
     `/kick` - Kick a user
     `/ban` - Ban a user
     `/timeout` - Timeout a user
     `/purge` - Purge messages
-    `/savemorph` - Save morph
-    `/morph` - Get your saved morph
     `/lockdown` - Lock a channel
     `/unlock` - Unlock a channel
+
+    **Misc**
+    `/virtus` - Shows Virtus morph channels
+    `/416` - Shows 416 morph channels
     """
     await interaction.response.send_message(commands_list)
 
@@ -293,8 +304,87 @@ async def purge(interaction: discord.Interaction, amount: int):
     log_channel = bot.get_channel(AUDIT_LOG_CHANNEL_ID)
     await log_channel.send(f"🧹 {interaction.user.mention} purged {amount} messages in {interaction.channel.mention}")
 
+# Deployment Log
+
+# Deployment Log
+
+@bot.tree.command(name="log", description="Log deployment attendees.")
+@app_commands.describe(
+    user1="Attendee 1",
+    user2="Attendee 2 (optional)",
+    user3="Attendee 3 (optional)",
+    user4="Attendee 4 (optional)",
+    user5="Attendee 5 (optional)"
+)
+async def log(
+    interaction: discord.Interaction,
+    user1: discord.Member,
+    user2: Optional[discord.Member] = None,
+    user3: Optional[discord.Member] = None,
+    user4: Optional[discord.Member] = None,
+    user5: Optional[discord.Member] = None,
+):
+    # Role check
+    if not any(role.id in DEPLOYMENT_ROLE for role in interaction.user.roles):
+        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
+        return
+
+    attendees = [user1]
+    for user in (user2, user3, user4, user5):
+        if user is not None:
+            attendees.append(user)
+
+    records = log_sheet.get_all_records()
+    id_to_row = {str(row["Discord ID"]): (i + 2, row) for i, row in enumerate(records)}  # Google Sheet rows start at 2
+    updated_mentions = []
+
+    for member in attendees:
+        member_id = str(member.id)
+        if member_id in id_to_row:
+            row_num, row = id_to_row[member_id]
+            current_count = int(row.get("Deployment Count", 0))
+            log_sheet.update_cell(row_num, 3, current_count + 1)
+        else:
+            log_sheet.append_row([member_id, str(member), 1])
+        updated_mentions.append(member.mention)
+
+    if updated_mentions:
+        await interaction.response.send_message(f"Logged deployment for: {', '.join(updated_mentions)}")
+    else:
+        await interaction.response.send_message("No valid members found to log.", ephemeral=True)
 
 
+@bot.tree.command(name="deployments", description="Check deployment count for yourself or another user.")
+@app_commands.describe(user="User to check deployment count for (optional)")
+async def deployments(interaction: discord.Interaction, user: Optional[discord.Member] = None):
+    target = user or interaction.user
+    user_id = str(target.id)
+    records = log_sheet.get_all_records()
+
+    for row in records:
+        if str(row["Discord ID"]) == user_id:
+            await interaction.response.send_message(f"{target.mention} has attended **{row['Deployment Count']}** deployments.")
+            return
+
+    await interaction.response.send_message(f"{target.mention} has no deployments logged yet.")
+
+@bot.tree.command(name="clearlog", description="Clear a users deployment log.")
+@app_commands.describe(user="The user whose deployment log you want to clear.")
+async def clearlog(interaction: discord.Interaction, user: discord.Member):
+    if not any(role.id in ALLOWED_ROLES for role in interaction.user.roles):
+        await interaction.response.send_message("No perms gang", ephemeral=True)
+        return
+
+    records = log_sheet.get_all_records()
+    for i, row in enumerate(records, start=2):
+        if str(row["Discord ID"]) == str(user.id):
+            log_sheet.update_cell(i, 3, 0)
+            await interaction.response.send_message(f"Cleared deployment log for {user.mention}.")
+            return
+
+    await interaction.response.send_message("User not found", ephemeral=True)
+
+# Ban and unban
 
 @app_commands.guilds(discord.Object(id=GUILD_ID))
 @bot.tree.command(name="unban", description="Unban a user")
@@ -310,7 +400,7 @@ async def untimeout(interaction: discord.Interaction, member: discord.Member):
     await member.timeout(None)
     await interaction.response.send_message(f"✅ Timeout removed from {member.mention}.")
 
-# temp
+# MISC
 
 @app_commands.guilds(discord.Object(id=GUILD_ID))
 @app_commands.guilds(discord.Object(id=GUILD_ID))
@@ -359,6 +449,17 @@ async def g(interaction: discord.Interaction, message: str):
     channel = bot.get_channel(1248647511913136179)
     await channel.send(message)
     await interaction.response.send_message("✅ Sent to #general-chat.", ephemeral=True)
+
+@app_commands.guilds(discord.Object(id=GUILD_ID))
+@bot.tree.command(name="e", description="Event")
+@app_commands.describe(message="The message to send")
+async def g(interaction: discord.Interaction, message: str):
+    if interaction.user.id != OWNER_ID:
+        await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
+        return
+    channel = bot.get_channel(1309756614387044352)
+    await channel.send(message)
+    await interaction.response.send_message("✅ Sent to #events.", ephemeral=True)
 
 @app_commands.guilds(discord.Object(id=GUILD_ID))
 @bot.tree.command(name="n", description="Send a message to #major-news")
