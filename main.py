@@ -22,6 +22,7 @@ client = gspread.authorize(creds)
 sheet = client.open("SCP Points Log").sheet1
 activity_sheet = client.open("SCP Points Log").worksheet("Deployments")
 morph_sheet = client.open("SCP Points Log").worksheet("Morphs")
+log_sheet = client.open("SCP Points Log").worksheet("Logs")
 
 # Constants
 POINTS_LOG_CHANNEL_ID = 1387710159446474895
