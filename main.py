@@ -308,8 +308,6 @@ async def purge(interaction: discord.Interaction, amount: int):
 
 # Deployment Log
 
-# Deployment Log
-
 @bot.tree.command(name="log", description="Log deployment attendees.")
 @app_commands.describe(
     user1="Attendee 1",
