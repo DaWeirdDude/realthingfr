@@ -11,6 +11,8 @@ from threading import Thread
 import os
 import json
 import re
+import typing
+from typing import Optional
 
 # Google Sheets Setup
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
