@@ -599,9 +599,9 @@ async def end(
     channel = interaction.guild.get_channel(interaction.channel.id)
     proof_url = None
     async for message in channel.history(limit=100, after=start_time, oldest_first=True):
-        if message.attachments:
-            proof_url = message.attachments[0].url
-            break
+        for attachment in message.attachments:
+            if attachment.content_type and attachment.content_type.startswith("image/"):
+                proof_url.append(attachment.url)
 
     if not proof_url:
         await interaction.followup.send(
@@ -609,6 +609,8 @@ async def end(
         )
         return
 
+    proof_text = "\n".join(proof_url)
+    
     for user in attendees:
         increment_deployment_count(log_sheet, user.id)
 
@@ -629,11 +631,12 @@ async def end(
     msg = (
         f"**Site:** {site}\n"
         f"**Faction Name:** Delta-0 \"Livid Night\"\n"
+        f"**Faction Leader:** <@534854012328214559>"
         f"**Host:** {interaction.user.mention}\n"
         f"**Co-host:** {cohost_text}\n"
         f"**Attendees:** {len(attendees)}\n"
         f"**Time:** {formatted_duration}\n"
-        f"**Proof:** {proof_url}"
+        f"**Proof:**\n{proof_text}"
     )
 
     log_channel = interaction.guild.get_channel(DEPLOYMENTS_LOG_CHANNEL)
