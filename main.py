@@ -37,6 +37,7 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("d!"), intents=intents)
 
 deployment_tracker = {}
+active_deployments = {}
 
 RULES = {
     1:
