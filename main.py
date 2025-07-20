@@ -172,6 +172,11 @@ async def cmds(interaction: discord.Interaction):
     `/deployments` - Check deployment count
     `/clearlog` - Clear a user's deployment logs
 
+    **Automation**
+    `/start` - Start a deployment
+    `/end` - End a deployment and log attendees
+    Note: Upload proof image in the events channel after /start and before /end
+
     **Moderation**
     `/kick` - Kick a user
     `/ban` - Ban a user
@@ -472,6 +477,169 @@ async def n(interaction: discord.Interaction, message: str):
     channel = bot.get_channel(1309756493314261072)
     await channel.send(message)
     await interaction.response.send_message("✅ Sent to #major-news.", ephemeral=True)
+
+# Deployment Automation
+
+@bot.tree.command(name="start", description="Start a deployment.")
+@app_commands.describe(site="Site number", cohost="Mention the co-host")
+async def start(interaction: discord.Interaction, site: str, cohost: discord.Member):
+    if interaction.channel.id != EVENTS_CHANNEL_ID:
+        await interaction.response.send_message("This command can only be used in the events channel.", ephemeral=True)
+        return
+
+    active_deployments[interaction.user.id] = {
+        "timestamp": datetime.utcnow(),
+        "site": site,
+        "cohost": cohost
+    }
+
+    await interaction.response.send_message(f"Deployment started for Site {site} with Co-host {cohost.mention}.")
+
+
+def get_column_index(sheet, col_name):
+    header = sheet.row_values(1)
+    if col_name in header:
+        return header.index(col_name) + 1
+    return None
+
+def increment_deployment_count(sheet, discord_id, discord_tag="Unknown#0000"):
+    records = sheet.get_all_records()
+    col_index = get_column_index(sheet, "Deployment Count")
+    for i, row in enumerate(records, start=2):
+        if str(row['Discord ID']) == str(discord_id):
+            current_count = int(row.get('Deployment Count', 0) or 0)
+            new_count = current_count + 1
+            if col_index:
+                sheet.update_cell(i, col_index, new_count)
+            return new_count
+    # If not found, append new row (Discord ID in A, Discord Tag in B, Deployment Count in C)
+    sheet.append_row([discord_id, discord_tag, 1])
+    return 1
+
+
+@bot.tree.command(name="end", description="End a deployment and log attendees.")
+@app_commands.describe(
+    attendee1="Deployment attendee 1 (required)",
+    attendee2="Deployment attendee 2 (optional)",
+    attendee3="Deployment attendee 3 (optional)",
+    attendee4="Deployment attendee 4 (optional)",
+    attendee5="Deployment attendee 5 (optional)",
+    attendee6="Deployment attendee 6 (optional)",
+    attendee7="Deployment attendee 7 (optional)",
+    attendee8="Deployment attendee 8 (optional)",
+    attendee9="Deployment attendee 9 (optional)",
+    attendee10="Deployment attendee 10 (optional)",
+    attendee11="Deployment attendee 11 (optional)",
+    attendee12="Deployment attendee 12 (optional)",
+    attendee13="Deployment attendee 13 (optional)",
+    attendee14="Deployment attendee 14 (optional)",
+    attendee15="Deployment attendee 15 (optional)",
+)
+@app_commands.guild_only()
+async def end(
+    interaction: Interaction,
+    attendee1: User,
+    attendee2: User = None,
+    attendee3: User = None,
+    attendee4: User = None,
+    attendee5: User = None,
+    attendee6: User = None,
+    attendee7: User = None,
+    attendee8: User = None,
+    attendee9: User = None,
+    attendee10: User = None,
+    attendee11: User = None,
+    attendee12: User = None,
+    attendee13: User = None,
+    attendee14: User = None,
+    attendee15: User = None,
+):
+    # Check command channel
+    if interaction.channel.id != EVENTS_CHANNEL_ID:
+        await interaction.response.send_message(
+            "This command can only be used in the events channel.", ephemeral=True
+        )
+        return
+
+    await interaction.response.defer(ephemeral=True)
+
+    user_id = interaction.user.id
+
+    if user_id not in active_deployments:
+        await interaction.followup.send(
+            "You have no active deployment started. Use /start first.", ephemeral=True
+        )
+        return
+
+    deployment = active_deployments[user_id]
+    start_time = deployment["timestamp"]
+    site = deployment["site"]
+    co_host = deployment["cohost"]
+
+    end_time = datetime.utcnow()
+    duration = end_time - start_time
+    total_seconds = int(duration.total_seconds())
+    minutes = total_seconds // 60
+    seconds = total_seconds % 60
+    formatted_duration = f"{minutes}.{seconds:02d} minutes"
+
+    attendees = [u for u in [
+        attendee1, attendee2, attendee3, attendee4, attendee5,
+        attendee6, attendee7, attendee8, attendee9, attendee10,
+        attendee11, attendee12, attendee13, attendee14, attendee15
+    ] if u]
+
+    for member in attendees:
+        increment_deployment_count(sheet, str(member.id), str(member))
+
+    channel = interaction.guild.get_channel(interaction.channel.id)
+    proof_url = None
+    async for message in channel.history(limit=100, after=start_time, oldest_first=True):
+        if message.attachments:
+            proof_url = message.attachments[0].url
+            break
+
+    if not proof_url:
+        await interaction.followup.send(
+            "No proof image found in the deployment channel after /start and before /end.", ephemeral=True
+        )
+        return
+
+    for user in attendees:
+        increment_deployment_count(log_sheet, user.id)
+
+    guild = interaction.guild
+
+    if isinstance(co_host, str):
+        # Try to find the member by their full username#discriminator
+        co_host_obj = guild.get_member_named(co_host)
+        if co_host_obj is None:
+            # If not found, just keep the string as is
+            co_host_obj = co_host
+    else:
+        co_host_obj = co_host
+
+    # Create the text that will mention co-host if possible
+    cohost_text = co_host_obj.mention if isinstance(co_host_obj, (discord.Member, discord.User)) else str(co_host_obj)
+    
+    msg = (
+        f"**Site:** {site}\n"
+        f"**Faction Name:** Delta-0 \"Livid Night\"\n"
+        f"**Host:** {interaction.user.mention}\n"
+        f"**Co-host:** {cohost_text}\n"
+        f"**Attendees:** {len(attendees)}\n"
+        f"**Time:** {formatted_duration}\n"
+        f"**Proof:** {proof_url}"
+    )
+
+    log_channel = interaction.guild.get_channel(DEPLOYMENTS_LOG_CHANNEL)
+    await log_channel.send(msg)
+
+    del active_deployments[user_id]
+
+    await interaction.followup.send(
+        f"Deployment ended and logged with {len(attendees)} attendees.",
+    )
 
 # Flask app for keeping the bot alive
 app = Flask('')
