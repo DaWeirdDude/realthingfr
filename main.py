@@ -21,7 +21,6 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
 client = gspread.authorize(creds)
 sheet = client.open("SCP Points Log").sheet1
 activity_sheet = client.open("SCP Points Log").worksheet("Deployments")
-morph_sheet = client.open("SCP Points Log").worksheet("Morphs")
 log_sheet = client.open("SCP Points Log").worksheet("Logs")
 
 # Constants
@@ -30,6 +29,9 @@ AUDIT_LOG_CHANNEL_ID = 1387713963550314577
 ALLOWED_ROLES = [1395018313847013487]
 DEPLOYMENT_ROLE = [1395875682810331318]
 GUILD_ID = 995723132478427267
+EVENTS_CHANNEL_ID = 1309756614387044352
+DEPLOYMENTS_LOG_CHANNEL = 1387310947110228070
+faction = 'Delta-0 "Livid Night"'
 
 # Bot Setup
 OWNER_ID = 719909192000864398
