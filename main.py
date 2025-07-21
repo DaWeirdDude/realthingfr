@@ -183,6 +183,7 @@ async def cmds(interaction: discord.Interaction):
     `/start` - Start a deployment
     `/end` - End a deployment and log attendees
     Note: Upload proof image in the events channel after /start and before /end
+    `/morph` - Automatically does the morph for you
 
     **Moderation**
     `/kick` - Kick a user
@@ -656,6 +657,54 @@ async def end(
     await interaction.followup.send(
         f"Deployment ended and logged with {len(attendees)} attendees.",
     )
+
+
+[⚠️ Suspicious Content] # Auto morph
+
+morphs = {
+    "virtus": {
+        "LR": 'run permrtag me <font face="Michroma">Delta-0 "Livid Night" | Rank</font> & permntag me <font face="Fantasy">["Callsign"]</font> & permcrtag me 0 0 0 & permcntag me 149 3 1 & permmorph me remove & permshirt me 14572682166 14572536468 & permhat me 0,JSNVG,Holster,89985831397392,17172715247,17330407522,Kneepads,13770147630,16755421666,4507911797,118325759243,18325759243,17430938152,15893925206,17558966643,12383357842 & startergear me mpx,glock & permmaxhealth me 110 & heal me',
+        "MR": 'run permrtag me <font face="Michroma">Delta-0 "Livid Night" | Rank</font> & permntag me <font face="Fantasy">["Callsign"]</font> & permcrtag me 0 0 0 & permcntag me 149 3 1 & permmorph me remove & permshirt me 14572682166 14572536468 & permhat me 0,JSNVG,Holster,89985831397392,17172715247,17330407522,Kneepads,13770147630,16755421666,4507911797,118325759243,18325759243,17430938152,15893925206,17558966643,12383357842 & startergear me mpx,glock & permmaxhealth me 110 & heal me',
+        "HR": 'run permrtag me <font face="Michroma">Delta-0 "Livid Night" | Rank</font> & permntag me <font face="Fantasy">["Callsign"]</font> & permcrtag me 0 0 0 & permcntag me 139 0 0 & permmorph me remove & permshirt me 14572682166 14572536468 & permhat me 0,JNVG,Holster,89985831397392,17172715247,17330407522,Kneepads,13770147630,16270371844,4507911797,118325759243,8087415055,17430938152,15893925206,12497812780,12497817183,17558966643 & permhat me 12383357842 & startergear me hk,glock & permmaxhealth me 120 & heal me',
+    },
+    "416": {
+        "LR": 'run permrtag me <font face="Michroma">Delta-0 "Livid Night" | Rank</font> & permcrtag me 4 2 115 & permmorph me remove & permshirt me 14572682166 14572536468 & permhat me 0,JSNVG,Holster,89985831397392,17172715247,17330407522,Kneepads,13770147630,16755421666,4507911797,118325759243,18325759243,17430938152,15893925206,17558966643,12383357842 & startergear me FN,MP7,Glock & permmaxhealth me 125 & heal me',
+        "MR": 'run permrtag me <font face="Michroma">Delta-0 "Livid Night" | Rank</font> & permcrtag me 4 2 115 & permmorph me remove & permshirt me 14572682166 14572536468 & permhat me 0,JNVG,Holster,89985831397392,17172715247,17330407522,Kneepads,13770147630,16270371844,4507911797,118325759243,8087415055,17430938152,15893925206,12497812780,12497817183,17558966643 & permhat me 12383357842 & startergear me FN,MP7,Glock & permmaxhealth me 150 & heal me',
+        "HR": 'run permrtag me <font face="Michroma">Delta-0 "Livid Night" | Rank</font> & permcrtag me 4 2 115 & permmorph me remove & permshirt me 14572682166 14572536468 & permhat me 0,JQNVG,Holster,89985831397392,17172715247,17330407522,Kneepads,13770147630,16270371844,4507911797,118325759243,8087415055,17430938152,15893925206,12497812780,18273662783,18273659133 & permhat me 12383357842 & startergear me FN,MP7,Glock & permmaxhealth me 175 & heal me',
+    }
+}
+
+@bot.tree.command(name="morph", description="Morph a user automatically.")
+@app_commands.describe(
+    site="Choose the site (416 or Virtus)",
+    roblox_username="Roblox username",
+    rank="Choose the rank (LR, MR, HR)"
+)
+@app_commands.choices(site=[
+    app_commands.Choice(name="416", value="416"),
+    app_commands.Choice(name="Virtus", value="Virtus"),
+])
+@app_commands.choices(rank=[
+    app_commands.Choice(name="LR", value="LR"),
+    app_commands.Choice(name="MR", value="MR"),
+    app_commands.Choice(name="HR", value="HR"),
+])
+async def morph(interaction: Interaction, site: app_commands.Choice[str], roblox_username: str, rank: app_commands.Choice[str]):
+    await interaction.response.defer(ephemeral=False)
+
+    site_key = site.value.lower()
+    rank_key = rank.value
+
+    morph_template = morphs.get(site_key, {}).get(rank_key)
+    if not morph_template:
+        await interaction.followup.send(f"Morph data not found for site `{site.value}` and rank `{rank.value}`.", ephemeral=True)
+        return
+
+    # Replace all ' me ' occurrences with the roblox username (surrounded by spaces)
+    morph_text = morph_template.replace(" me ", f" {roblox_username} ")
+
+    await interaction.followup.send(f"Morph command for **{site.value}**:\n```\n{morph_text}\n```", ephemeral=True)
+
 
 # Flask app for keeping the bot alive
 app = Flask('')
