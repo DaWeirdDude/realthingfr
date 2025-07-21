@@ -603,7 +603,7 @@ async def end(
 
     for member in attendees:
         username_only = member.name if hasattr(member, "name") else str(member)
-        increment_deployment_count(sheet, str(member.id), tag)
+        increment_deployment_count(sheet, str(member.id), username)
 
 
     channel = interaction.guild.get_channel(interaction.channel.id)
