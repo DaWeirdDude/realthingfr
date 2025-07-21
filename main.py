@@ -690,7 +690,7 @@ morphs = {
     app_commands.Choice(name="HR", value="HR"),
 ])
 async def morph(interaction: Interaction, site: app_commands.Choice[str], roblox_username: str, rank: app_commands.Choice[str]):
-    await interaction.response.defer(ephemeral=False)
+    await interaction.response.defer(ephemeral=True)
 
     site_key = site.value.lower()
     rank_key = rank.value
