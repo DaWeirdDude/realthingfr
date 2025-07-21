@@ -634,7 +634,7 @@ async def end(
     msg = (
         f"**Site:** {site}\n"
         f"**Faction Name:** Delta-0 \"Livid Night\"\n"
-        f"**Faction Leader:** <@534854012328214559>"
+        f"**Faction Leader:** <@534854012328214559>\n"
         f"**Host:** {interaction.user.mention}\n"
         f"**Co-host:** {cohost_text}\n"
         f"**Attendees:** {len(attendees)}\n"
