@@ -602,7 +602,7 @@ async def end(
     ] if u]
 
     for member in attendees:
-        username_only = member.name if hasattr(member, "name") else str(member)
+        username = member.name if hasattr(member, "name") else str(member)
         increment_deployment_count(sheet, str(member.id), username)
 
 
