@@ -511,14 +511,17 @@ def get_column_index(sheet, col_name):
 
 def increment_deployment_count(sheet, discord_id, discord_tag="Unknown#0000"):
     records = sheet.get_all_records()
-    col_index = get_column_index(sheet, "Deployment Count")
+    col_count_index = get_column_index(sheet, "Deployment Count")
+    col_tag_index = get_column_index(sheet, "Discord Tag")  # assuming this is the column header for tags
     for i, row in enumerate(records, start=2):
-        # Normalize for possible leading apostrophe in stored ID
         if str(row['Discord ID']).lstrip("'") == str(discord_id):
             current_count = int(row.get('Deployment Count', 0) or 0)
             new_count = current_count + 1
-            if col_index:
-                sheet.update_cell(i, col_index, new_count)
+            if col_count_index:
+                sheet.update_cell(i, col_count_index, new_count)
+            if col_tag_index:
+                # Update Discord Tag to latest tag
+                sheet.update_cell(i, col_tag_index, discord_tag)
             return new_count
     # Not found — append new row
     sheet.append_row([f"'{discord_id}", discord_tag, 1])
@@ -598,7 +601,7 @@ async def end(
     ] if u]
 
     for member in attendees:
-        tag = f"{member.name}#{member.discriminator}" if hasattr(member, "discriminator") else "Unknown#0000"
+        tag = f"{member.name}#{member.discriminator}" if getattr(member, "discriminator", None) else member.name
         increment_deployment_count(sheet, str(member.id), tag)
 
 
