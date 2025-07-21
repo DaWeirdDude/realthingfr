@@ -175,9 +175,6 @@ async def cmds(interaction: discord.Interaction):
     `/stopdeploy` - Stop deployment timer
     `/deploylog` - View deployment logs
     `/cleardeploy` - Clear a user's deployment logs
-    `/log` - Log deployment attendees
-    `/deployments` - Check deployment count
-    `/clearlog` - Clear a user's deployment logs
 
     **Automation**
     `/start` - Start a deployment
@@ -504,70 +501,17 @@ async def start(interaction: discord.Interaction, site: str, cohost: discord.Mem
     await interaction.response.send_message(f"Deployment started for Site {site} with Co-host {cohost.mention}.")
 
 
-def get_column_index(sheet, col_name):
-    header = sheet.row_values(1)
-    if col_name in header:
-        return header.index(col_name) + 1
-    return None
-
-def increment_deployment_count(sheet, discord_id, discord_tag="Unknown#0000"):
-    records = sheet.get_all_records()
-    col_count_index = get_column_index(sheet, "Deployment Count")
-    col_tag_index = get_column_index(sheet, "Discord Tag")  # assuming this is the column header for tags
-    for i, row in enumerate(records, start=2):
-        if str(row['Discord ID']).lstrip("'") == str(discord_id):
-            current_count = int(row.get('Deployment Count', 0) or 0)
-            new_count = current_count + 1
-            if col_count_index:
-                sheet.update_cell(i, col_count_index, new_count)
-            if col_tag_index:
-                # Update Discord Tag to latest tag
-                sheet.update_cell(i, col_tag_index, discord_tag)
-            return new_count
-    # Not found — append new row
-    sheet.append_row([f"'{discord_id}", discord_tag, 1])
-    return 1
-
-
-@bot.tree.command(name="end", description="End a deployment and log attendees.")
+@bot.tree.command(name="end", description="End a deployment and log attendee count.")
 @app_commands.describe(
-    attendee1="Deployment attendee 1 (required)",
-    attendee2="Deployment attendee 2 (optional)",
-    attendee3="Deployment attendee 3 (optional)",
-    attendee4="Deployment attendee 4 (optional)",
-    attendee5="Deployment attendee 5 (optional)",
-    attendee6="Deployment attendee 6 (optional)",
-    attendee7="Deployment attendee 7 (optional)",
-    attendee8="Deployment attendee 8 (optional)",
-    attendee9="Deployment attendee 9 (optional)",
-    attendee10="Deployment attendee 10 (optional)",
-    attendee11="Deployment attendee 11 (optional)",
-    attendee12="Deployment attendee 12 (optional)",
-    attendee13="Deployment attendee 13 (optional)",
-    attendee14="Deployment attendee 14 (optional)",
-    attendee15="Deployment attendee 15 (optional)",
+    attendee_count="Number of attendees present in the deployment"
 )
 @app_commands.guild_only()
 async def end(
     interaction: Interaction,
-    attendee1: User,
-    attendee2: User = None,
-    attendee3: User = None,
-    attendee4: User = None,
-    attendee5: User = None,
-    attendee6: User = None,
-    attendee7: User = None,
-    attendee8: User = None,
-    attendee9: User = None,
-    attendee10: User = None,
-    attendee11: User = None,
-    attendee12: User = None,
-    attendee13: User = None,
-    attendee14: User = None,
-    attendee15: User = None,
+    attendee_count: int,
 ):
     # Check command channel
-    if interaction.channel.id != EVENTS_CHANNEL_ID:
+    if not interaction.channel or interaction.channel.id != EVENTS_CHANNEL_ID:
         await interaction.response.send_message(
             "This command can only be used in the events channel.", ephemeral=True
         )
@@ -588,23 +532,12 @@ async def end(
     site = deployment["site"]
     co_host = deployment["cohost"]
 
-    end_time = datetime.utcnow()
+    end_time = datetime.now(timezone.utc)
     duration = end_time - start_time
     total_seconds = int(duration.total_seconds())
     minutes = total_seconds // 60
     seconds = total_seconds % 60
-    formatted_duration = f"{minutes}.{seconds:02d} minutes"
-
-    attendees = [u for u in [
-        attendee1, attendee2, attendee3, attendee4, attendee5,
-        attendee6, attendee7, attendee8, attendee9, attendee10,
-        attendee11, attendee12, attendee13, attendee14, attendee15
-    ] if u]
-
-    for member in attendees:
-        username = member.name if hasattr(member, "name") else str(member)
-        increment_deployment_count(sheet, str(member.id), username)
-
+    formatted_duration = f"{minutes} minutes {seconds} seconds"
 
     channel = interaction.guild.get_channel(interaction.channel.id)
     proof_url = []
@@ -619,32 +552,38 @@ async def end(
         )
         return
 
-    proof_text = "\n".join(proof_url)
-    
-    for user in attendees:
-        increment_deployment_count(log_sheet, user.id)
+   proof_url = []
+    async for message in channel.history(limit=100, after=start_time, oldest_first=True):
+        for attachment in message.attachments:
+            if attachment.content_type and attachment.content_type.startswith("image/"):
+                proof_url.append(attachment.url)
+
+    if len(proof_url) < 2:
+        await interaction.followup.send(
+            "At least two proof images are required in the deployment channel after /start and before /end.", ephemeral=True
+        )
+        return
+
+proof_text = "\n".join(proof_url)
 
     guild = interaction.guild
 
     if isinstance(co_host, str):
-        # Try to find the member by their full username#discriminator
         co_host_obj = guild.get_member_named(co_host)
         if co_host_obj is None:
-            # If not found, just keep the string as is
             co_host_obj = co_host
     else:
         co_host_obj = co_host
 
-    # Create the text that will mention co-host if possible
-    cohost_text = co_host_obj.mention if isinstance(co_host_obj, (discord.Member, discord.User)) else str(co_host_obj)
-    
+    cohost_text = co_host_obj.mention if hasattr(co_host_obj, "mention") else str(co_host_obj)
+
     msg = (
         f"**Site:** {site}\n"
         f"**Faction Name:** Delta-0 \"Livid Night\"\n"
         f"**Faction Leader:** <@534854012328214559>\n"
         f"**Host:** {interaction.user.mention}\n"
         f"**Co-host:** {cohost_text}\n"
-        f"**Attendees:** {len(attendees)}\n"
+        f"**Attendees:** {attendee_count}\n"
         f"**Time:** {formatted_duration}\n"
         f"**Proof:**\n{proof_text}"
     )
@@ -655,8 +594,11 @@ async def end(
     del active_deployments[user_id]
 
     await interaction.followup.send(
-        f"Deployment ended and logged with {len(attendees)} attendees.",
+        f"Deployment ended and logged with {attendee_count} attendees.",
     )
+
+
+
 
 
 # Auto morph
