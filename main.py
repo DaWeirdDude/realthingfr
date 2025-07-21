@@ -513,14 +513,15 @@ def increment_deployment_count(sheet, discord_id, discord_tag="Unknown#0000"):
     records = sheet.get_all_records()
     col_index = get_column_index(sheet, "Deployment Count")
     for i, row in enumerate(records, start=2):
-        if str(row['Discord ID']) == str(discord_id):
+        # Normalize for possible leading apostrophe in stored ID
+        if str(row['Discord ID']).lstrip("'") == str(discord_id):
             current_count = int(row.get('Deployment Count', 0) or 0)
             new_count = current_count + 1
             if col_index:
                 sheet.update_cell(i, col_index, new_count)
             return new_count
-    # If not found, append new row (Discord ID in A, Discord Tag in B, Deployment Count in C)
-    sheet.append_row([discord_id, discord_tag, 1])
+    # Not found — append new row
+    sheet.append_row([f"'{discord_id}", discord_tag, 1])
     return 1
 
 
