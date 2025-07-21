@@ -112,6 +112,9 @@ async def on_message(message):
     if "crazy" in content:
         await message.channel.send(
             "Crazy? I was crazy once. They locked me in a room. A rubber room. A rubber room? A rubber room filled with rats. And rats make me crazy.")
+    if "lupus" in content:
+        await message.channel.send(
+            "It's never lupus you absolute dumbfuck.")
 
 # Utility Functions
 
@@ -597,7 +600,7 @@ async def end(
         increment_deployment_count(sheet, str(member.id), str(member))
 
     channel = interaction.guild.get_channel(interaction.channel.id)
-    proof_url = None
+    proof_url = []
     async for message in channel.history(limit=100, after=start_time, oldest_first=True):
         for attachment in message.attachments:
             if attachment.content_type and attachment.content_type.startswith("image/"):
