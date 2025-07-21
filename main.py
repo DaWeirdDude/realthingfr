@@ -659,7 +659,7 @@ async def end(
     )
 
 
-[⚠️ Suspicious Content] # Auto morph
+# Auto morph
 
 morphs = {
     "virtus": {
