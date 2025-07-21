@@ -598,7 +598,9 @@ async def end(
     ] if u]
 
     for member in attendees:
-        increment_deployment_count(sheet, str(member.id), str(member))
+        tag = f"{member.name}#{member.discriminator}" if hasattr(member, "discriminator") else "Unknown#0000"
+        increment_deployment_count(sheet, str(member.id), tag)
+
 
     channel = interaction.guild.get_channel(interaction.channel.id)
     proof_url = []
