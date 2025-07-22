@@ -493,7 +493,7 @@ async def start(interaction: discord.Interaction, site: str, cohost: discord.Mem
         return
 
     active_deployments[interaction.user.id] = {
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(timezone.utc),
         "site": site,
         "cohost": cohost
     }
