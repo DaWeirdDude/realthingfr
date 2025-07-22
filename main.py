@@ -546,25 +546,13 @@ async def end(
             if attachment.content_type and attachment.content_type.startswith("image/"):
                 proof_url.append(attachment.url)
 
-    if not proof_url:
-        await interaction.followup.send(
-            "No proof image found in the deployment channel after /start and before /end.", ephemeral=True
-        )
-        return
-
-   proof_url = []
-    async for message in channel.history(limit=100, after=start_time, oldest_first=True):
-        for attachment in message.attachments:
-            if attachment.content_type and attachment.content_type.startswith("image/"):
-                proof_url.append(attachment.url)
-
     if len(proof_url) < 2:
         await interaction.followup.send(
             "At least two proof images are required in the deployment channel after /start and before /end.", ephemeral=True
         )
         return
 
-proof_text = "\n".join(proof_url)
+    proof_text = "\n".join(proof_url)
 
     guild = interaction.guild
 
@@ -596,7 +584,6 @@ proof_text = "\n".join(proof_url)
     await interaction.followup.send(
         f"Deployment ended and logged with {attendee_count} attendees.",
     )
-
 
 
 
