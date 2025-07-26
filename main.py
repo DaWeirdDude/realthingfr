@@ -94,12 +94,12 @@ async def on_message(message):
     content = message.content.lower()
 
     # Check Rules with regex to match only rule followed by number 1-15
-    rule_match = re.search(r"\brule\s*(\d{1,2})\b", content)
+    rule_match = re.search(r"\brule\s*(\d+)\b", content)
     if rule_match:
         rule_num = int(rule_match.group(1))
         if rule_num in RULES:
             await message.channel.send(RULES[rule_num])
-            return  # stop further processing
+            return
 
     # Check Protocols
     protocol_match = re.search(r"\bprotocol\s*(\d{1,2})\b", content)
