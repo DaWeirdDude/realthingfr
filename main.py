@@ -14,6 +14,7 @@ import json
 import re
 import typing
 from typing import Optional
+import random
 
 # Google Sheets Setup
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
