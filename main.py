@@ -109,12 +109,21 @@ async def on_message(message):
             return
 
     # Other keywords
-    if "crazy" in content:
+    if "crazy" in content and random.random() < 0.05: 
         await message.channel.send(
-            "Crazy? I was crazy once. They locked me in a room. A rubber room. A rubber room? A rubber room filled with rats. And rats make me crazy.")
-    if "lupus" in content:
-        await message.channel.send(
-            "It's never lupus you absolute dumbfuck.")
+            "Crazy? I was crazy once. They locked me in a room. A rubber room. A rubber room filled with rats. And rats make me crazy.")
+        
+    if "lupus" in content and random.random() < 0.05:
+        lupus_responses = [
+            "It's never lupus you absolute dumbfuck.",
+            "Lupus? That's cute. Try harder.",
+            "Still not lupus gang. It's never lupus.",
+            "<@510784737800093716> would be disappointed."
+            "Lupus? I had lupus once. They locked me in a room. A room filled with lupus. And lupus makes me lupus."
+            "Gang plz stop im done saying its never lupus."
+        ]
+        await message.channel.send(random.choice(lupus_responses))
+
 
 # Utility Functions
 
@@ -231,13 +240,32 @@ async def points(interaction: discord.Interaction, user: discord.Member):
 async def leaderboard(interaction: discord.Interaction):
     try:
         all_data = sheet.get_all_records()
-        sorted_data = sorted(all_data, key=lambda x: x['Points'], reverse=True)
-        embed = discord.Embed(title="📊 Leaderboard", color=discord.Color.gold())
-        for i, row in enumerate(sorted_data[:10], start=1):
-            embed.add_field(name=f"{i}.", value=f"<@{row['Discord ID']}> - {row['Points']} points", inline=False)
+
+        # Filter out rows missing required data
+        valid_data = [row for row in all_data if 'Points' in row and 'Discord ID' in row]
+        sorted_data = sorted(valid_data, key=lambda x: int(x['Points']), reverse=True)
+
+        embed = discord.Embed(
+            title="📊 Leaderboard",
+            color=discord.Color.gold()
+        )
+
+        if not sorted_data:
+            embed.description = "No leaderboard data found."
+        else:
+            for i, row in enumerate(sorted_data[:10], start=1):
+                discord_id = str(row['Discord ID'])
+                points = row['Points']
+                embed.add_field(
+                    name=f"{i}.",
+                    value=f"<@{discord_id}> - **{points}** points",
+                    inline=False
+                )
+
         await interaction.response.send_message(embed=embed)
+
     except Exception as e:
-        await interaction.response.send_message(f"❌ Error loading leaderboard: {e}")
+        await interaction.response.send_message(f"❌ Error loading leaderboard: `{e}`", ephemeral=True)
 
 @app_commands.guilds(discord.Object(id=GUILD_ID))
 @bot.tree.command(name="startdeploy", description="Start deployment timer")
