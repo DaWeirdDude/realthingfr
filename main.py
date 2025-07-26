@@ -119,9 +119,9 @@ async def on_message(message):
             "It's never lupus you absolute dumbfuck.",
             "Lupus? That's cute. Try harder.",
             "Still not lupus gang. It's never lupus.",
-            "<@510784737800093716> would be disappointed."
-            "Lupus? I had lupus once. They locked me in a room. A room filled with lupus. And lupus makes me lupus."
-            "Gang plz stop im done saying its never lupus."
+            "<@510784737800093716> would be disappointed.",
+            "Lupus? I had lupus once. They locked me in a room. A room filled with lupus. And lupus makes me lupus.",
+            "Gang plz stop im done saying its never lupus.",
         ]
         await message.channel.send(random.choice(lupus_responses))
 
