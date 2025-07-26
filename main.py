@@ -117,7 +117,6 @@ async def on_message(message):
     if "lupus" in content and random.random() < 0.05:
         lupus_responses = [
             "It's never lupus you absolute dumbfuck.",
-            "Lupus? That's cute. Try harder.",
             "Still not lupus gang. It's never lupus.",
             "<@510784737800093716> would be disappointed.",
             "Lupus? I had lupus once. They locked me in a room. A room filled with lupus. And lupus makes me lupus.",
