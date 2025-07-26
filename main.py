@@ -15,6 +15,7 @@ import re
 import typing
 from typing import Optional
 import random
+import math
 
 # Google Sheets Setup
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -241,37 +242,83 @@ async def leaderboard(interaction: discord.Interaction):
     try:
         all_data = sheet.get_all_records()
 
-        # Filter out rows missing required data
-        valid_data = [row for row in all_data if 'Points' in row and 'Discord ID' in row]
-        sorted_data = sorted(valid_data, key=lambda x: int(x['Points']), reverse=True)
+        # Filter out invalid or blank rows
+        valid_data = []
+        for row in all_data:
+            points = row.get('Points')
+            discord_id = row.get('Discord ID')
 
-        embed = discord.Embed(
-            title="📊 Leaderboard",
-            color=discord.Color.gold()
-        )
+            if not discord_id or not str(points).strip():
+                continue  # skip blank rows
+
+            try:
+                points = int(points)
+                valid_data.append({'Discord ID': discord_id, 'Points': points})
+            except ValueError:
+                continue  # skip non-numeric points
+
+        # Sort by points
+        sorted_data = sorted(valid_data, key=lambda x: x['Points'], reverse=True)
 
         if not sorted_data:
-            embed.description = "No leaderboard data found."
-        else:
-            for i, row in enumerate(sorted_data[:10], start=1):
-                discord_id = str(row['Discord ID'])
-                points = row['Points']
+            await interaction.response.send_message("⚠️ No valid leaderboard data found.", ephemeral=True)
+            return
+
+        per_page = 10
+        total_pages = math.ceil(len(sorted_data) / per_page)
+        current_page = 0
+
+        def get_embed(page):
+            start = page * per_page
+            end = start + per_page
+            page_data = sorted_data[start:end]
+
+            embed = discord.Embed(
+                title=f"📊 Leaderboard (Page {page + 1}/{total_pages})",
+                color=discord.Color.gold()
+            )
+
+            for i, row in enumerate(page_data, start=start + 1):
                 embed.add_field(
                     name=f"{i}.",
-                    value=f"<@{discord_id}> - **{points}** points",
+                    value=f"<@{row['Discord ID']}> — **{row['Points']}** points",
                     inline=False
                 )
 
-        await interaction.response.send_message(embed=embed)
+            return embed
+
+        # View + buttons
+        view = View(timeout=60)
+
+        async def update_message(inter, page_change):
+            nonlocal current_page
+            current_page += page_change
+            current_page = max(0, min(current_page, total_pages - 1))
+
+            # Disable buttons appropriately
+            prev_button.disabled = current_page == 0
+            next_button.disabled = current_page == total_pages - 1
+
+            await inter.response.edit_message(embed=get_embed(current_page), view=view)
+
+        prev_button = Button(label="⬅️ Previous", style=discord.ButtonStyle.primary)
+        next_button = Button(label="Next ➡️", style=discord.ButtonStyle.primary)
+
+        prev_button.callback = lambda inter: update_message(inter, -1)
+        next_button.callback = lambda inter: update_message(inter, +1)
+
+        # Initial button state
+        prev_button.disabled = current_page == 0
+        next_button.disabled = total_pages <= 1
+
+        view.add_item(prev_button)
+        view.add_item(next_button)
+
+        await interaction.response.send_message(embed=get_embed(current_page), view=view)
 
     except Exception as e:
         await interaction.response.send_message(f"❌ Error loading leaderboard: `{e}`", ephemeral=True)
 
-@app_commands.guilds(discord.Object(id=GUILD_ID))
-@bot.tree.command(name="startdeploy", description="Start deployment timer")
-async def startdeploy(interaction: discord.Interaction):
-    deployment_tracker[interaction.user.id] = time.time()
-    await interaction.response.send_message(f"⏱️ Deployment started for {interaction.user.mention}.")
 
 @app_commands.guilds(discord.Object(id=GUILD_ID))
 @bot.tree.command(name="stopdeploy", description="Stop deployment timer")
