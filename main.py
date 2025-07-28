@@ -195,7 +195,7 @@ async def cmds(interaction: discord.Interaction):
     **Moderation**
     `/kick` - Kick a user
     `/ban` - Ban a user
-    `/timeout` - Timeout a user
+    `/syfm` - Shuts a users fucking mouth
     `/purge` - Purge messages
     `/sybau` - Lock a channel
     `/unlock` - Unlock a channel
@@ -376,7 +376,7 @@ async def ban(interaction: discord.Interaction, user: discord.Member, reason: st
     await interaction.response.send_message(f"🔨 {user.name} has been banned. Reason: {reason}")
 
 @app_commands.guilds(discord.Object(id=GUILD_ID))
-@bot.tree.command(name="timeout", description="Timeout a member")
+@bot.tree.command(name="syfm", description="Timeout a member")
 @app_commands.describe(member="Member to timeout", minutes="Duration in minutes")
 async def timeout(interaction: discord.Interaction, member: discord.Member, minutes: int):
     duration = timedelta(minutes=minutes)
