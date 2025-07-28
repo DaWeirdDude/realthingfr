@@ -197,7 +197,7 @@ async def cmds(interaction: discord.Interaction):
     `/ban` - Ban a user
     `/timeout` - Timeout a user
     `/purge` - Purge messages
-    `/lockdown` - Lock a channel
+    `/sybau` - Lock a channel
     `/unlock` - Unlock a channel
 
     **Misc**
@@ -504,7 +504,7 @@ async def fouronesix(interaction: discord.Interaction):
 
 # LOCKDOWN
 @app_commands.guilds(discord.Object(id=GUILD_ID))
-@bot.tree.command(name="lockdown", description="Lock a channel")
+@bot.tree.command(name="sybau", description="Sybau's a channel")
 async def lockdown(interaction: discord.Interaction):
     if not is_allowed(interaction):
         await interaction.response.send_message("Sybau bro u dont have permission.", ephemeral=True)
